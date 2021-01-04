@@ -1,0 +1,370 @@
+---
+title: Targeted Metabolomics profiling of Myalgic Encephalomyelitis/Chronic Fatigue Syndrome patients and controls. 
+
+subtitle: Statistical analyses using MetaboAnalystR3.0.3 as part of the publication by Fernandez-Guerra, Gonzalez-Ebsen, et al. 2021
+
+author:
+- Julie Courraud, PharmD, PhD (julc@ssi.dk)
+- Section for Clinical Mass Spectrometry, Danish Center for Neonatal Screening, 
+- Department of Congenital Disorders, Statens Serum Institut Copenhagen, Artillerivej 5, 2300 Copenhagen S, Denmark
+
+date: December 17, 2020
+output:
+  html_document:
+    toc: true
+    theme: cerulean
+---
+                                     
+```{r setup, include=FALSE}
+library(tidyverse)
+library(gridExtra)
+knitr::opts_chunk$set(echo = T, eval = T, warning = F, message = F)
+```
+
+---
+<font size="4"> This document presents the statistical analyses performed on the targeted metabolomics data acquired on the 10 samples included in the study and preprocessed using the MeTaQuaC package (see the separate MeTaQuaC reports).</font>
+
+---
+
+# Results
+
+## Data processing - Transformation and Scaling
+The figure shows the compounds concentrations before and after generalized log (glog) transformation and Pareto scaling (see step 3.3 of the script).
+
+![Figure caption: Scaling results](C:/ME-CFS/norm_0_dpi300.png){#id .class width=70% height=70%}
+
+## Fold-change analysis
+The figure shows in purple the  25 compounds that are outside the defined *controls/patients* fold-change thresholds of: >1.3 or <0.77 (see step 4 of the script).
+
+![Figure caption: Fold-Change analysis](C:/ME-CFS/fc_0_dpi300.png){#id .class width=70% height=70%}
+
+Below are shown the 25 compounds and their fold-change values.
+```{r, echo = FALSE}
+fc <- read.csv ("fold_change.csv")
+DT::datatable(fc)
+
+```
+
+## t-tests with false discovery rate (FDR) correction
+The figure shows all p-values obtained from the univariate t-tests analyses (see step 5 of the script).
+
+P-values are FDR-corrected.
+
+No compound was found significantly different between patients and controls.
+
+![Figure caption: t-tests plots displaying p-values with FDR correction](C:/ME-CFS/tt_0_dpi300.png){#id .class width=70% height=70%}
+
+Below is shown the list of all p-values before and after FDR correction.
+```{r, echo = FALSE}
+pval <- read.csv ("t_test_all.csv")
+pval <- arrange(pval, p.value)
+DT::datatable(pval)
+
+```
+
+## Volcano plot and box plots
+The figure shows the volcano plot combining the controls/patients fold-change analysis to p-values *WITHOUT* FDR correction here (see step 6 of the script).
+
+Two compounds have a p-value *before FDR correction* <0.05 and a fold-change (controls/patients) above 1.3: PC(36:4) and PC-O(34:4)
+
+![Figure caption: Volcano plot displaying p-values WITHOUT FDR correction](C:/ME-CFS/volcano_0_dpi300.png){#id .class width=80% height=80%}
+
+Below are shown the two selected compounds, their fold-change values and raw p-values.
+```{r, echo = FALSE}
+volc <- read.csv ("volcano.csv")
+DT::datatable(volc)
+
+```
+
+Below are shown the two box plots displaying the selected compounds concentrations in patients and controls (see step 9 of the script).
+```{r, echo = FALSE}
+library(tidyverse)
+ft_fia_all <- read.table ("C:/ME-CFS/ME-CFS_MeTaQuaC_exported_data_FIA.csv", sep=",", header=TRUE, dec=".", skip = 1, row.names = 1)
+ft_lc_all <- read.table ("C:/ME-CFS/ME-CFS_MeTaQuaC_exported_data_LC.csv", sep=",", header=TRUE, dec=".", skip = 1, row.names = 1)
+ft_fia <- ft_fia_all[-c(1,2,3,4), ]
+ft_fia <- select(ft_fia, starts_with("sample"))
+ft_lc <- ft_lc_all[-c(1,2,3), ]
+ft_lc <- select(ft_lc, starts_with("sample"))
+ft <- rbind(ft_lc, ft_fia)
+ft <- as.data.frame(t(ft))
+ft$Type <- gsub("Case", "Patients", ft$Type)
+ft$Type <- gsub("Control", "Controls", ft$Type)
+for(i in c(2:ncol(ft))) {
+  ft[,i] <- as.numeric(ft[,i])
+}
+ft[,1] <- as.factor(ft[,1])
+
+library(gridExtra)
+
+p1 <- ggplot2::ggplot(ft, ggplot2::aes(x = Type, y = ft[,109], color = Type)) +
+    ggplot2::geom_boxplot(outlier.shape = NA) +
+    ggplot2::geom_jitter(shape = 16, position = position_jitter(0.2)) +
+    ggplot2::labs(y = "Concentrations in ng/mL") +
+    ggplot2::labs(title = "PC(36:4)") +
+    ggplot2::scale_x_discrete(labels = c(Controls = "Controls", Patients = "Patients")) +
+    ggplot2::scale_colour_manual(values = c(rgb(96, 108, 158, maxColorValue = 255),
+                                            rgb(193, 88, 88, maxColorValue = 255))) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(panel.border = element_blank(), 
+                   panel.grid.major = element_blank(),
+                   panel.grid.minor = element_blank(), 
+                   axis.line = element_line(colour = "black", size = 0.75),
+                   axis.title.x = element_blank(),
+                   axis.title.y = element_text(size = 18, 
+                                               margin = margin(t = 0, r = 15, b = 0, l = 0)),
+                   axis.text = element_text(colour = "black", size = 18),
+                   plot.title = element_text(hjust = 0.5, size = 20),
+                   legend.position = "none")
+
+p2 <- ggplot2::ggplot(ft, ggplot2::aes(x = Type, y = ft[,76], color = Type)) +
+    ggplot2::geom_boxplot(outlier.shape = NA) +
+    ggplot2::geom_jitter(shape = 16, position = position_jitter(0.2)) +
+    ggplot2::labs(y = "Concentrations in ng/mL") +
+    ggplot2::labs(title = "PC-O(34:4)") +
+    ggplot2::scale_x_discrete(labels = c(Controls = "Controls", Patients = "Patients")) +
+    ggplot2::scale_colour_manual(values = c(rgb(96, 108, 158, maxColorValue = 255),
+                                            rgb(193, 88, 88, maxColorValue = 255))) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(panel.border = element_blank(), 
+                   panel.grid.major = element_blank(),
+                   panel.grid.minor = element_blank(), 
+                   axis.line = element_line(colour = "black", size = 0.75),
+                   axis.title.x = element_blank(),
+                   axis.title.y = element_text(size = 18, 
+                                               margin = margin(t = 0, r = 15, b = 0, l = 0)),
+                   axis.text = element_text(colour = "black", size = 18),
+                   plot.title = element_text(hjust = 0.5, size = 20),
+                   legend.position = "none")
+
+grid.arrange(p1, p2, nrow = 1)
+```
+
+
+## Principal Component Analysis
+The PCA analysis reveals no separation of patients and controls (see step 7 of the script).
+
+![Figure caption: PCA scores plot](C:/ME-CFS/pca_score2d_0_dpi300.png){#id .class width=70% height=70%}
+
+![Figure caption: PCA scree plot](C:/ME-CFS/pca_scree_0_dpi300.png){#id .class width=70% height=70%}
+
+## Hierarchical Clustering Heatmaps
+The first heatmap displays all compounds included int he analysis, while the second displays only the 10 compounds with lowest non-corrected p-value in the t-tests, i.e. <0.15 here (see step 8 of the script).
+
+The heatmaps do not show a clear pattern differentiating patients and controls.
+![Figure caption: Heatmap displaying all compounds included in the analysis](C:/ME-CFS/heatmap_0_dpi300.png){#id .class width=60% height=60%}
+
+![Figure caption: Heatmap displaying the selected 10 compounds](C:/ME-CFS/heatmap_10comp_dpi300.png){#id .class width=60% height=60%}
+
+
+# R script
+
+### 1- Formatting the compound concentrations table exported from the MeTaQuaC output into MetaboAnalyst format
+
+Reading the exported tables
+```{r}
+library(tidyverse)
+
+ft_fia_all <- read.table ("C:/ME-CFS/ME-CFS_MeTaQuaC_exported_data_FIA.csv", sep=",", header=TRUE, dec=".", skip = 1, row.names = 1)
+ft_lc_all <- read.table ("C:/ME-CFS/ME-CFS_MeTaQuaC_exported_data_LC.csv", sep=",", header=TRUE, dec=".", skip = 1, row.names = 1)
+
+```
+
+Combining sample measurements for compounds acquired with LC-HRMS and FIA-HRMS
+```{r}
+ft_fia <- ft_fia_all[-c(1,2,3,4), ]
+ft_fia <- select(ft_fia, starts_with("sample"))
+ft_lc <- ft_lc_all[-c(1,2,3), ]
+ft_lc <- select(ft_lc, starts_with("sample"))
+ft <- rbind(ft_lc, ft_fia)
+
+```
+
+Transposing the dataframe to have compounds in columns and samples in rows. 
+```{r}
+ft <- as.data.frame(t(ft))
+ft$Type <- gsub("Case", "Patients", ft$Type)
+ft$Type <- gsub("Control", "Controls", ft$Type)
+```
+
+Making sure the classes are correct ("factor" for Type and "numeric" for compound concentrations to be able to use the ft directly)
+```{r}
+for(i in c(2:ncol(ft))) {
+  ft[,i] <- as.numeric(ft[,i])
+}
+ft[,1] <- as.factor(ft[,1])
+sapply(ft, class) 
+
+```
+
+Creating the CSV file that will be used by MetaboAnalystR
+```{r}
+write.table(ft, 'C:/ME-CFS/ME-CFS_MeTaQuaC_exported_data.csv', sep=',',col.names = NA, row.names = TRUE, quote = TRUE, na="NA")
+
+```
+
+### 2- Performing transformation/scaling and statistical analyses using MetaboAnalystR3.03
+
+See the guide at https://www.metaboanalyst.ca/docs/RTutorial.xhtml
+```{r}
+library(amap)
+library(RJSONIO)
+library("MetaboAnalystR")
+packageVersion("MetaboAnalystR")
+
+```
+
+#### STEP 1: Creating the mSet Object, specifying that the data to be uploaded is a compound concentration table ("conc") and that statistical analysis will be performed ("stat")
+```{r}
+mSet<-InitDataObjects("conc", "stat", FALSE)
+
+```
+
+#### STEP 2: Reading in the concentration table, please set the path right first
+```{r}
+mSet<-Read.TextData(mSet, "C:/ME-CFS/ME-CFS_MeTaQuaC_exported_data.csv", "rowu", "disc")
+
+```
+
+#### STEP 3: Performing data processing using MetaboAnalystR (filtering/normalization)
+
+3.1: Performing data processing - Data checking
+```{r}
+mSet<-SanityCheckData(mSet)
+
+```
+
+3.2: Performing data processing - Minimum Value Replacing
+
+Missing values will be replaced by 1/5 of min positive values of their corresponding variables
+```{r}
+mSet<-ReplaceMin(mSet)
+
+```
+
+3.3: Performing data processing - Transformation and Scaling
+
+"Normalization" in MetaboAnalyst implies "row-wise" normalization, which is sample-based: we don't apply any.
+
+Then transformation (generalized log).
+
+Then column-wise scaling (feature-based) including Pareto.
+
+Pareto scaling is mean-centered and divided by the square root of the SD
+```{r}
+mSet<-PreparePrenormData(mSet)
+mSet<-Normalization(mSet, "NULL", "LogNorm", "ParetoNorm", ratio=FALSE, ratioNum=20)
+
+```
+
+Visualizing (saving the figures in your work directory)
+```{r}
+mSet<-PlotNormSummary(mSet, "norm_0_", "png", 300, width=NA)
+mSet<-PlotSampleNormSummary(mSet, "snorm_0_", "png", 300, width=NA)
+
+```
+
+Saving your tables in your working directory
+```{r}
+mSet<-SaveTransformedData(mSet)
+
+```
+
+#### STEP 4: Performing fold-change analysis
+```{r}
+mSet<-FC.Anal.unpaired(mSet, 1.3, 0)
+mSet<-PlotFC(mSet, "fc_0_", "png", 300, width=NA)
+
+```
+
+#### STEP 5: Performing t-test analysis (with FDR correction)
+```{r}
+mSet <- Ttests.Anal(mSet, FALSE, 0.1, FALSE, TRUE, TRUE)
+mSet <- PlotTT(mSet, "tt_0_", "png", 300, width=NA)
+
+```
+
+#### STEP 6: Creating a volcano plot combining the fold-change analysis to p-values WITHOUT FDR correction here.
+```{r}
+mSet<-Volcano.Anal(mSet, FALSE, 1.3, 0, 0.75,F, 0.05, TRUE, "raw")
+mSet<-PlotVolcano(mSet, "volcano_0_",1, "png", 300, width=NA)
+
+```
+
+#### STEP 7: Performing Principal Component Analysis (PCA)
+```{r}
+mSet<-PCA.Anal(mSet)
+mSet<-PlotPCAPairSummary(mSet, "pca_pair_0_", "png", 300, width=NA, 5)
+mSet<-PlotPCAScree(mSet, "pca_scree_0_", "png", 300, width=NA, 5)
+mSet<-PlotPCA2DScore(mSet, "pca_score2d_0_", "png", 300, width=NA, 1,2,0.95,0,0)
+mSet<-PlotPCALoading(mSet, "pca_loading_0_", "png", 300, width=NA, 1,2);
+mSet<-PlotPCABiplot(mSet, "pca_biplot_0_", "png", 300, width=NA, 1,2)
+mSet<-PlotPCA3DLoading(mSet, "pca_loading3d_0_", "json", 1,2,3)
+
+```
+
+#### STEP 8: Visualizing data in Hierarchical Clustering Heatmaps. 
+
+8.1: full list of compounds
+```{r}
+mSet<-PlotHeatMap(mSet, "heatmap_0_", "png", 300, width=NA, "norm", "row", "euclidean", "complete","bwm", "overview", T, T, NULL, T, F)
+
+```
+
+8.2: displaying only the 10 compounds with lowest p-values without FDR correction in the t-tests, i.e. here <0.15.
+```{r}
+mSet<-PlotSubHeatMap(mSet, "heatmap_10comp_", "png", 300, width=NA, "norm", "row", "euclidean", "complete","bwm", "tanova", 10, "overview", T, T, T, F)
+
+```
+
+#### STEP 9: Creating individual boxplots for visualization of selected compounds and export as pdf
+```{r}
+pdf(file="PC364_PC-O344_boxplots.pdf", width=10, height=5)
+
+p1 <- ggplot2::ggplot(ft, ggplot2::aes(x = Type, y = ft[,109], color = Type)) +
+    ggplot2::geom_boxplot(outlier.shape = NA) +
+    ggplot2::geom_jitter(shape = 16, position = position_jitter(0.2)) +
+    ggplot2::labs(y = "Concentrations in ng/mL") +
+    ggplot2::labs(title = "PC(36:4)") +
+    ggplot2::scale_x_discrete(labels = c(Controls = "Controls", Patients = "Patients")) +
+    ggplot2::scale_colour_manual(values = c(rgb(96, 108, 158, maxColorValue = 255),
+                                            rgb(193, 88, 88, maxColorValue = 255))) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(panel.border = element_blank(), 
+                   panel.grid.major = element_blank(),
+                   panel.grid.minor = element_blank(), 
+                   axis.line = element_line(colour = "black", size = 0.75),
+                   axis.title.x = element_blank(),
+                   axis.title.y = element_text(size = 20, 
+                                               margin = margin(t = 0, r = 20, b = 0, l = 0)),
+                   axis.text = element_text(colour = "black", size = 18),
+                   plot.title = element_text(hjust = 0.5, size = 20),
+                   legend.position = "none")
+
+p2 <- ggplot2::ggplot(ft, ggplot2::aes(x = Type, y = ft[,76], color = Type)) +
+    ggplot2::geom_boxplot(outlier.shape = NA) +
+    ggplot2::geom_jitter(shape = 16, position = position_jitter(0.2)) +
+    ggplot2::labs(y = "Concentrations in ng/mL") +
+    ggplot2::labs(title = "PC-O(34:4)") +
+    ggplot2::scale_x_discrete(labels = c(Controls = "Controls", Patients = "Patients")) +
+    ggplot2::scale_colour_manual(values = c(rgb(96, 108, 158, maxColorValue = 255),
+                                            rgb(193, 88, 88, maxColorValue = 255))) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(panel.border = element_blank(), 
+                   panel.grid.major = element_blank(),
+                   panel.grid.minor = element_blank(), 
+                   axis.line = element_line(colour = "black", size = 0.75),
+                   axis.title.x = element_blank(),
+                   axis.title.y = element_text(size = 20, 
+                                               margin = margin(t = 0, r = 20, b = 0, l = 0)),
+                   axis.text = element_text(colour = "black", size = 18),
+                   plot.title = element_text(hjust = 0.5, size = 20),
+                   legend.position = "none")
+
+grid.arrange(p1, p2, nrow = 1)
+
+dev.off()
+
+```
+
+
+
