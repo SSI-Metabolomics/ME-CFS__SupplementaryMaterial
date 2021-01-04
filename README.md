@@ -33,6 +33,6 @@ and to run various scaling, transformation, and statistical analyses presented i
 ## Citation
 [Kuhring, M.; Eisenberger, A.; Schmidt, V.; Kränkel, N.; Leistner, D.M.; Kirwan, J.; Beule, D. Concepts and Software Package for Efficient Quality Control in Targeted Metabolomics Studies: MeTaQuaC. Anal. Chem. 2020, 92, 10241–10245, doi:10.1021/acs.analchem.0c00136.](https://pubs.acs.org/doi/abs/10.1021/acs.analchem.0c00136)
 
-[R Core Team R: a language and environment for statistical computing Available online: https://www.R-project.org/ (accessed on Nov 21, 2019).]
+R Core Team R: a language and environment for statistical computing Available online: https://www.R-project.org/ (accessed on Nov 21, 2019).
 
 [Pang, Z.; Chong, J.; Li, S.; Xia, J. MetaboAnalystR 3.0: Toward an Optimized Workflow for Global Metabolomics. Metabolites 2020, 10, doi:10.3390/metabo10050186.](https://pubmed.ncbi.nlm.nih.gov/32392884/)
